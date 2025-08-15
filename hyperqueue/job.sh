@@ -21,7 +21,11 @@ export HQ_SERVER_DIR=~/.hq-server-${SLURM_JOBID}
 # Start HyperQueue server and workers
 hq server start --journal=${JOURNAL} &
 #sleep 10  # hq version <=0.23
-hq server wait  # hq version >0.23
+hq server wait --timeout=120  # hq version >0.23
+if [ "$?" -ne 0 ]; then
+    echo "Server did not start, exiting ..."
+    exit 1
+fi
 srun hq worker start &
 
 # Submit some jobs

@@ -38,3 +38,5 @@ This example shows some useful use-cases but does not cover everything HyperQueu
 In order to allow running several independent SLURM jobs with HyperQueue, `HQ_SERVER_DIR` has to be set to an unique dir.
 
 If the SLURM job fails, e.g. it is killed because of time limit, the unfinished HyperQueue jobs/tasks can be restarted. This is done by setting `--journal` when starting the HyperQueue server. We can either create a new file when submitting new jobs, or pass an existing file to restart unfinished jobs/tasks. If we are restarting the jobs, we should not submit them again, hence the `if` around `hq submit`.
+
+New version of HyperQueue (nightly build at the moment) has a command `hq server wait`. With older versions we need to sleep for few seconds to give the server enough time to start before starting workers and submitting jobs.
