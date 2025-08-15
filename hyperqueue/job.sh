@@ -6,32 +6,42 @@
 #SBATCH -p normal
 #SBATCH -A csstaff
 
-#echo "$(hostname): ${SLURM_NODEID} ${SLURM_LOCALID}"
+# Set up journal in order to recover and rerun failed jobs
+RESTORE_JOB=$1
+if [ -n "$RESTORE_JOB" ]; then
+    export JOURNAL=~/.hq-journal-${RESTORE_JOB}
+else
+    export JOURNAL=~/.hq-journal-${SLURM_JOBID}
+fi
+
+# Make sure every SLURM job creates its own server
+# in case of running multiple SLURM jobs simultaneously
+export HQ_SERVER_DIR=~/.hq-server-${SLURM_JOBID}
 
 # Start HyperQueue server and workers
-hq server start &
-sleep 10
+hq server start --journal=${JOURNAL} &
+#sleep 10  # hq version <=0.23
+hq server wait  # hq version >0.23
 srun hq worker start &
-sleep 10
 
 # Submit some jobs
-hq submit --resource "cpus=1" --array 1-300 ./task.sh;
-hq submit --resource "gpus/nvidia=1" --array 1-16 ./task.sh;
+# Submit them only if we are not restarting failed jobs
+if [ -z "$RESTORE_JOB" ]; then
+    hq submit --resource "cpus=1" --array 1-300 ./task.sh;
+    hq submit --resource "gpus/nvidia=1" --array 1-16 ./task.sh;
+fi
 
 # Wait for all jobs to finish
-for i in `seq 1 2`; do
-    hq job wait $i;
-done
-
-# Debugging: print all workers
-# Sometimes workers do not start
-hq worker list
+hq job wait all
 
 # Stop HyperQueue workers and server
-for i in `seq 1 ${SLURM_NNODES}`; do
-    hq worker stop $i;
-done
 hq server stop
+
+# Cleanup
+rm -rf ${HQ_SERVER_DIR}
+
+# Everything finished correctly, we can delete the journal
+rm -rf ${JOURNAL}
 
 echo
 echo "Everything done!"

@@ -27,11 +27,14 @@ This runs an sbatch job that does the following steps. I want to do everything i
 - Stop all HyperQueue workers
 - Stop HyperQueue server
 
-## Problems
-- Worker processes often don't start
+If the SLURM job fails, e.g. it is killed because of time limit, the unfinished HyperQueue jobs/tasks can be restarted by passing ID of the failed job as an agrument to `job.sh`. If this is repeated multiple times, the ID of the first job should be used.
+```bash
+sbatch job.sh <failed-job-id>
+```
 
-## Questions
-- Can I wait for the server and/or worker to start? I'd like to remove the `sleep xx` because I can never be sure that xx seconds is enough.
-- Is it smart calling `srun ... &`? Can I do something better?
-- How can I make the boilerplate as generic as possible?
-- Can I wait for all jobs to finish? Waiting for one job at a time is complicated, and I don't know in advance how many jobs are in the queue.
+## Notes
+This example shows some useful use-cases but does not cover everything HyperQueue offers. For complete list of features, refer to the HyperQueue documentation https://it4innovations.github.io/hyperqueue/stable/.
+
+In order to allow running several independent SLURM jobs with HyperQueue, `HQ_SERVER_DIR` has to be set to an unique dir.
+
+If the SLURM job fails, e.g. it is killed because of time limit, the unfinished HyperQueue jobs/tasks can be restarted. This is done by setting `--journal` when starting the HyperQueue server. We can either create a new file when submitting new jobs, or pass an existing file to restart unfinished jobs/tasks. If we are restarting the jobs, we should not submit them again, hence the `if` around `hq submit`.
